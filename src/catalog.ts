@@ -1,6 +1,16 @@
 import marbleRunCover from '../archive/ld30/src/uk/co/homletmoo/ld30/assets/images/title.png';
 
-export const games = [
+export interface Game {
+  slug: string;
+  title: string;
+  date: string;
+  blurb: string;
+  cover: string;
+  coverAlt: string;
+  path: string;
+}
+
+export const games: Game[] = [
   {
     slug: 'ld30',
     title: 'Marble Run',
@@ -12,6 +22,6 @@ export const games = [
   },
 ];
 
-export function getGame(slug) {
+export const getGame = (slug: string | undefined): Game | undefined => {
   return games.find((game) => game.slug === slug);
-}
+};

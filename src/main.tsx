@@ -1,8 +1,8 @@
 import { createRoot } from 'react-dom/client';
-import { getGame, games } from './catalog.js';
+import { getGame, games, type Game } from './catalog';
 import './site.css';
 
-function GameCard({ game }) {
+const GameCard = ({ game }: { game: Game }) => {
   return (
     <a className="game-card" href={game.path}>
       <div className="game-card__art">
@@ -18,9 +18,9 @@ function GameCard({ game }) {
       </div>
     </a>
   );
-}
+};
 
-function HomePage() {
+const HomePage = () => {
   return (
     <main className="site-shell">
       <header className="site-header">
@@ -45,9 +45,9 @@ function HomePage() {
       </footer>
     </main>
   );
-}
+};
 
-function GamePage({ game }) {
+const GamePage = ({ game }: { game: Game | undefined }) => {
   if (!game) {
     return (
       <main className="site-shell game-page">
@@ -56,7 +56,7 @@ function GamePage({ game }) {
         <p>This game is not in the collection.</p>
       </main>
     );
-  }
+  };
 
   return (
     <main className="site-shell game-page">
