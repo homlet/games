@@ -1,15 +1,15 @@
-import { resolve } from 'node:path';
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import { resolve } from "node:path";
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
 export default defineConfig({
-  plugins: [react()],
-  build: {
-    rollupOptions: {
-      input: {
-        home: resolve(import.meta.dirname, 'index.html'),
-        ld30: resolve(import.meta.dirname, 'games/ld30/index.html'),
-      },
+    plugins: [react()],
+    build: {
+        rollupOptions: {
+            input: {
+                home: resolve(import.meta.dirname, "index.html"),
+                ld30: resolve(import.meta.dirname, "games/ld30/index.html"),
+            },
+        },
     },
-  },
 });
