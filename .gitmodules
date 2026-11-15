@@ -1,0 +1,3 @@
+[submodule "archive/ld30"]
+	path = archive/ld30
+	url = git@github.com:Homlet/LD30.git
