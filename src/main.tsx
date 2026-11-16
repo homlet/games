@@ -1,5 +1,6 @@
 import { createRoot } from "react-dom/client";
 import { getGame, games, type Game } from "./catalog";
+import { Ld30Game } from "./ld30/Ld30Game";
 import "./site.css";
 
 const GameCard = ({ game }: { game: Game }) => {
@@ -72,10 +73,16 @@ const GamePage = ({ game }: { game: Game | undefined }) => {
                 aria-labelledby="game-title"
             >
                 <div className="game-stage">
-                    <img src={game.cover} alt={game.coverAlt} />
-                    <p className="game-stage__status">
-                        Playable version coming soon
-                    </p>
+                    {game.slug === "ld30" ? (
+                        <Ld30Game />
+                    ) : (
+                        <>
+                            <img src={game.cover} alt={game.coverAlt} />
+                            <p className="game-stage__status">
+                                Playable version coming soon
+                            </p>
+                        </>
+                    )}
                 </div>
                 <div className="game-description">
                     <p className="eyebrow">{game.date}</p>
