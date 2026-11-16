@@ -11,7 +11,7 @@ import {
     TILE_WALL,
     auditLevel,
     decodeLevelPixels,
-} from "./levelData";
+} from "./levelData.ts";
 
 function makeSingleMapPixels(): Uint8ClampedArray {
     const pixels = new Uint8ClampedArray(LEVEL_WIDTH * LEVEL_HEIGHT * 4);
@@ -73,7 +73,7 @@ test("decodeLevelPixels rejects invalid dimensions and unknown colors fall back 
     unknownPixels[idx + 2] = 99;
     assert.throws(
         () => decodeLevelPixels(unknownPixels, LEVEL_WIDTH, LEVEL_HEIGHT),
-        /expected at least one start, target, and hole/i,
+        /expected at least one start and target/i,
     );
 
     const knownFallback = new Uint8ClampedArray((LEVEL_WIDTH * LEVEL_HEIGHT) * 4);
@@ -95,6 +95,28 @@ test("decodeLevelPixels rejects invalid dimensions and unknown colors fall back 
     knownFallback[wallIndex + 2] = 99;
     const castLevel = decodeLevelPixels(knownFallback, LEVEL_WIDTH, LEVEL_HEIGHT);
     assert.equal(castLevel.cells[0][0], TILE_WALL);
+});
+
+test("decodeLevelPixels allows levels without holes", () => {
+    const pixels = new Uint8ClampedArray(LEVEL_WIDTH * LEVEL_HEIGHT * 4);
+    for (let i = 0; i < pixels.length; i += 4) {
+        pixels[i] = 0;
+        pixels[i + 1] = 0;
+        pixels[i + 2] = 0;
+        pixels[i + 3] = 255;
+    }
+
+    const startIndex = (0 * LEVEL_WIDTH + 1) * 4;
+    pixels[startIndex] = 255;
+
+    const targetIndex = (0 * LEVEL_WIDTH + 2) * 4;
+    pixels[targetIndex + 1] = 255;
+
+    const level = decodeLevelPixels(pixels, LEVEL_WIDTH, LEVEL_HEIGHT);
+
+    assert.equal(level.starts.length, 1);
+    assert.equal(level.targets.length, 1);
+    assert.deepEqual(level.holes, []);
 });
 
 test("auditLevel exposes the counts needed for a level review", () => {

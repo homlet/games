@@ -96,9 +96,9 @@ export function decodeLevelPixels(
         }
     }
 
-    if (starts.length === 0 || targets.length === 0 || holes.length === 0) {
+    if (starts.length === 0 || targets.length === 0) {
         throw new Error(
-            `Invalid LD30 level: expected at least one start, target, and hole. Found ${starts.length} start(s), ${targets.length} target(s), ${holes.length} hole(s).`,
+            `Invalid LD30 level: expected at least one start and target. Found ${starts.length} start(s), ${targets.length} target(s), ${holes.length} hole(s).`,
         );
     }
 

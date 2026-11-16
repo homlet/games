@@ -44,6 +44,7 @@
 - [x] Add a development-level audit for decoded maps.
   - Confirm that all maps decode completely without missing or malformed entities.
   - Expose start, target, and hole counts for review.
+  - Allow maps with no hole cells; original levels 1 and 2 have none.
 
 ## Phase 3 — Implement original movement and collision behavior
 
