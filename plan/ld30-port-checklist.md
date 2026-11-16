@@ -20,28 +20,28 @@
 
 ## Phase 2 — Decode and render the original levels
 
-- [ ] Load each original level PNG and decode its pixel colors into the game’s tile logic.
+- [x] Load each original level PNG and decode its pixel colors into the game’s tile logic.
   - Map black pixels to wall tiles.
   - Map white pixels to ground tiles.
   - Map red pixels to start positions.
   - Map green pixels to targets.
   - Map blue pixels to holes.
   - Treat unknown colors as walls to match the original map logic.
-- [ ] Validate each map before use.
+- [x] Validate each map before use.
   - Check that every map matches the expected 20×15 grid.
   - Reject invalid dimensions before gameplay starts.
   - Ensure map decoding is based on source pixels rather than hardcoded level data.
-- [ ] Build the level representation from the decoded map data.
+- [x] Build the level representation from the decoded map data.
   - Derive the grid from the original source PNGs.
   - Build the level’s wall/collision geometry from the same decoded tiles used for rendering.
-- [ ] Instantiate the level entities from map cells.
+- [x] Instantiate the level entities from map cells.
   - Place start marbles from red cells.
   - Place targets from green cells.
   - Place holes using the original hole mask rather than treating each 40×40 cell as a hazard.
-- [ ] Render the 20×15 board using the original tile sheet at 40 pixels per tile.
+- [x] Render the 20×15 board using the original tile sheet at 40 pixels per tile.
   - Preserve the original visual layout and tile alignment.
   - Keep collision data and rendering tied to the same source geometry.
-- [ ] Add a development-level audit for decoded maps.
+- [x] Add a development-level audit for decoded maps.
   - Confirm that all maps decode completely without missing or malformed entities.
   - Expose start, target, and hole counts for review.
 
