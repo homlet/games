@@ -82,7 +82,9 @@ const ld30AssetEntries = [
     ["title", ld30ImageAssets.title],
     ["background", ld30ImageAssets.background],
     ["foreground", ld30ImageAssets.foreground],
-    ...ld30LevelMapAssets.map((level, index) => [`level ${index + 1}`, level] as const),
+    ...ld30LevelMapAssets.map(
+        (level, index) => [`level ${index + 1}`, level] as const,
+    ),
     ["bell", ld30SoundAssets.bell],
     ["roll", ld30SoundAssets.roll],
     ["hole 1", ld30SoundAssets.hole1],
