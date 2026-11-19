@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
+    "test": "node --experimental-strip-types --test src/ld30/*.test.ts",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"
   },

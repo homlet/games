@@ -48,85 +48,86 @@
 
 ## Phase 3 — Implement original movement and collision behavior
 
-- [ ] Port the original Marble constants into the gameplay logic.
+- [x] Port the original Marble constants into the gameplay logic.
   - Gravity/acceleration: `G = 980`
   - Friction coefficient: `MU = 0.08`
   - Restitution: `0.4`
   - Slope factor: `(1 - MU * sqrt(3)) / 2`
-- [ ] Recreate input-driven acceleration and friction behavior.
+- [x] Recreate input-driven acceleration and friction behavior.
   - Apply directional acceleration using the original controls.
   - Apply per-axis friction only when that axis has no active directional input.
   - Preserve the original low-speed stop-versus-bounce threshold of 30 px/s.
-- [ ] Implement axis-separated movement against walls and other marbles.
+- [x] Implement axis-separated movement against walls and other marbles.
   - Separate movement on X and Y axes.
   - Resolve wall collisions with the original restitution and stop thresholds.
   - Preserve the original collision sound gating above 35.
-- [ ] Determine and implement the safe fixed-timestep strategy.
-  - Prefer a fixed 60 Hz simulation with an accumulator if needed.
-  - Prevent tunneling through walls during slower frames.
+- [x] Determine and implement the safe fixed-timestep strategy.
+  - Run the simulation at fixed 60 Hz; cap each level-frame delta at 40 ms, with a 100 ms accumulator limit and at most five catch-up steps.
+  - Sweep each axis in at-most-one-pixel increments to prevent wall tunneling.
+  - Drop excess whole catch-up steps while preserving the fractional accumulator; the original updates directly from frame delta, so this bounds stalls rather than attempting an unbounded catch-up.
   - Keep simulation deterministic and explicit rather than relying on engine physics defaults.
-- [ ] Recreate target activation.
+- [x] Recreate target activation.
   - Each target is lit when a marble overlaps it.
   - Advance to the next level only when all targets are activated.
-- [ ] Recreate hole reset behavior.
+- [x] Recreate hole reset behavior.
   - On marble entry into a hole, reset all marbles to their start positions.
   - Zero all marble velocities on reset.
   - Emit the original death/spawn particle effect and play the next hole sound.
-- [ ] Recreate board tilt and smoothing behavior.
+- [x] Recreate board tilt and smoothing behavior.
   - Drive tilt from current input direction.
   - Smooth toward the requested tilt amount.
   - Keep tilt as presentation-only so it does not alter collision geometry.
 
 ## Phase 4 — Implement scenes, timing, and transitions
 
-- [ ] Recreate the splash scene.
+- [x] Recreate the splash scene.
   - Flashpunk and HM logos
   - frame animation
   - alpha fades
   - timing and placement matching the source presentation
-- [ ] Recreate the menu scene.
+- [x] Recreate the menu scene.
   - Scrolling background
   - title fade
   - start behavior: any released key starts level 1
-- [ ] Implement the level scene.
+- [x] Implement the level scene.
   - Render board, marbles, targets, particles, and timer
   - Carry cumulative elapsed time across levels
   - Format elapsed time as whole seconds in `m:ss`
-- [ ] Implement the end scene.
+- [x] Implement the end scene.
   - Show foreground and scrolling background
   - Display final time, par (`160` seconds), and Homletmoo record (`123` seconds)
   - Play the bell
   - Wait at least three seconds before accepting a released key
   - Restart at level 1 with a fresh timer
-- [ ] Make scene changes safe and idempotent.
+- [x] Make scene changes safe and idempotent.
   - Prevent duplicate transitions if the target is completed in the same update cycle.
   - Avoid triggering multiple scene changes from a single event.
-- [ ] Handle tab-away and pause behavior without physics jumps.
+- [x] Handle tab-away and pause behavior without physics jumps.
   - Prevent excessive catch-up movement when the page regains focus.
   - Preserve elapsed play time while avoiding large movement jumps on resume.
 
 ## Phase 5 — Restore sound and effects
 
-- [ ] Load the original audio assets through the browser audio pipeline.
+- [x] Load the original audio assets through the browser audio pipeline.
   - Bell
   - rolling loop
   - eight hit sounds
   - three hole sounds
-- [ ] Unlock audio only after a user gesture.
+- [x] Unlock audio only after a user gesture.
   - Comply with browser autoplay restrictions.
   - Ensure the initial interaction reliably unlocks audio for future playback.
-- [ ] Implement the rolling audio loop.
+- [x] Implement the rolling audio loop.
   - Start and stop it as needed during level play.
   - Adjust volume according to the original average-marble-speed target.
   - Cap volume at 1.
-- [ ] Implement hit and hole sound selection.
+- [x] Implement hit and hole sound selection.
   - Cycle through the original sound variations in the correct order.
   - Preserve speed-based hit volume behavior.
   - Preserve horizontal pan mapping.
-- [ ] Recreate the bell and particle effects.
+- [x] Recreate the bell and particle effects.
   - Play the bell on level entry and on completion.
   - Recreate spawn/death particles and their original timing/easing.
-- [ ] Avoid duplicate audio loops and orphaned audio objects.
+- [x] Avoid duplicate audio loops and orphaned audio objects.
   - Prevent multiple rolling loops from accumulating across scene changes.
   - Ensure cleanup on level transitions and React unmount.
 
