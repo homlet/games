@@ -59,7 +59,10 @@ interface EffectParticle {
     vy: number;
     age: number;
     duration: number;
-    isDeath: boolean;
+    frameStart: number;
+    frameCount: number;
+    frameIndex: number;
+    animated: boolean;
 }
 
 interface LevelRuntime {
@@ -119,7 +122,13 @@ const emitEffect = (
             collisionType: ex.CollisionType.PreventCollision,
             z: 3,
         });
-        const frame = kind === "death" ? index : 5 + (index % 4);
+        const frameStart = kind === "death" ? 0 : 5;
+        const frameCount = kind === "death" ? 5 : 4;
+        const animated = kind === "death";
+        const frameIndex = animated
+            ? 0
+            : Math.floor(Math.random() * frameCount);
+        const frame = frameStart + frameIndex;
         actor.graphics.use(sprites[frame]!.clone());
         scene.add(actor);
         effects.push({
@@ -130,24 +139,40 @@ const emitEffect = (
             vy: Math.sin(angle) * speed,
             age: 0,
             duration: kind === "death" ? 450 : 500,
-            isDeath: kind === "death",
+            frameStart,
+            frameCount,
+            frameIndex,
+            animated,
         });
     }
 };
 
-const updateEffects = (effects: EffectParticle[], elapsedMs: number): void => {
+const updateEffects = (
+    effects: EffectParticle[],
+    sprites: readonly ex.Sprite[],
+    elapsedMs: number,
+): void => {
     for (let index = effects.length - 1; index >= 0; index -= 1) {
         const effect = effects[index]!;
         effect.age += elapsedMs;
         const progress = Math.min(effect.age / effect.duration, 1);
         const easedProgress = 1 - (1 - progress) ** 3;
-        if (!effect.isDeath) {
-            effect.actor.pos.setTo(
-                effect.x + effect.vx * (effect.duration / 1000) * easedProgress,
-                effect.y + effect.vy * (effect.duration / 1000) * easedProgress,
+        if (effect.animated) {
+            const frameIndex = Math.min(
+                Math.floor(progress * effect.frameCount),
+                effect.frameCount - 1,
             );
+            if (frameIndex !== effect.frameIndex) {
+                effect.frameIndex = frameIndex;
+                effect.actor.graphics.use(
+                    sprites[effect.frameStart + frameIndex]!.clone(),
+                );
+            }
         }
-        effect.actor.graphics.opacity = 1 - progress;
+        effect.actor.pos.setTo(
+            effect.x + effect.vx * (effect.duration / 1000) * easedProgress,
+            effect.y + effect.vy * (effect.duration / 1000) * easedProgress,
+        );
 
         if (progress === 1) {
             effect.actor.kill();
@@ -807,6 +832,7 @@ export function Ld30Game() {
                         );
                         updateEffects(
                             runtime.effects,
+                            particleSprites,
                             FIXED_STEP_SECONDS * 1000,
                         );
 
