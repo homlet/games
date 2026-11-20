@@ -452,7 +452,10 @@ export function Ld30Game() {
                 ]);
                 const handleGameplayKeyDown = (event: KeyboardEvent) => {
                     const key = event.key.toLowerCase();
-                    if (movementKeys.has(key)) {
+                    if (
+                        movementKeys.has(key) &&
+                        rootRef.current?.contains(document.activeElement)
+                    ) {
                         event.preventDefault();
                         heldKeys.add(key);
                     }
@@ -642,6 +645,9 @@ export function Ld30Game() {
                     gameClock.levelElapsedMs = 0;
                     menuScrollOffset = 0;
                     const handleStart = (event: KeyboardEvent) => {
+                        if (!rootRef.current?.contains(document.activeElement)) {
+                            return;
+                        }
                         if (!shouldStartLevelFromReleasedKey(event.repeat)) {
                             return;
                         }
@@ -1005,6 +1011,9 @@ export function Ld30Game() {
                     gameClock.endStartedAt = Date.now();
                     endScrollOffset = 0;
                     const handleRestart = (event: KeyboardEvent) => {
+                        if (!rootRef.current?.contains(document.activeElement)) {
+                            return;
+                        }
                         const elapsedSinceEnd =
                             Date.now() - gameClock.endStartedAt;
                         if (!shouldRestartAfterEndDelay(elapsedSinceEnd, event.repeat)) {
@@ -1085,10 +1094,19 @@ export function Ld30Game() {
             tabIndex={0}
             aria-label="Marble Run game stage"
         >
-            <div ref={hostRef} className="ld30-canvas-shell" />
+            <div
+                ref={hostRef}
+                className="ld30-canvas-shell"
+                onPointerDown={() => {
+                    hostRef.current
+                        ?.querySelector<HTMLCanvasElement>("canvas")
+                        ?.focus();
+                }}
+            />
             <div className="ld30-stage-status" aria-live="polite">
                 {status === "loading" && "Loading Marble Run…"}
-                {status === "ready" && "Keyboard required • Arrows / WASD"}
+                {status === "ready" &&
+                    "Keyboard required • Click or Tab, then use Arrows / WASD"}
                 {status === "error" &&
                     (errorMessage ?? "Asset loading failed. Refresh to retry.")}
             </div>

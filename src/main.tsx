@@ -88,6 +88,12 @@ const GamePage = ({ game }: { game: Game | undefined }) => {
                     <p className="eyebrow">{game.date}</p>
                     <h1 id="game-title">{game.title}</h1>
                     <p>{game.blurb}</p>
+                    {game.slug === "ld30" && (
+                        <p className="game-description__controls">
+                            Keyboard-only game: click or Tab to the game, then use
+                            the arrow keys or WASD.
+                        </p>
+                    )}
                 </div>
             </section>
             <footer className="site-footer">

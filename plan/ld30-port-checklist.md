@@ -133,17 +133,17 @@
 
 ## Phase 6 — Integrate and polish the site page
 
-- [ ] Replace the placeholder “coming soon” game-stage state with the actual `Ld30Game` host.
+- [x] Replace the placeholder “coming soon” game-stage state with the actual `Ld30Game` host.
   - Preserve the page’s back link, title, description, and overall structure.
-- [ ] Keep the 4:3 presentation responsive and centered.
+- [x] Keep the 4:3 presentation responsive and centered.
   - Scale without stretching on narrow viewports.
   - Keep the keyboard-only design clear in the page copy.
-- [ ] Ensure keyboard controls work correctly after focus enters the game area.
+- [x] Ensure keyboard controls work correctly after focus enters the game area.
   - Prevent accidental page scrolling while playing.
   - Preserve normal site navigation outside the game.
-- [ ] Refresh the landing card artwork if a better in-game screenshot is produced.
+- [x] Refresh the landing card artwork if a better in-game screenshot is produced.
   - Use an in-game representative image for the card.
   - Keep the original title artwork in the game itself.
-- [ ] Confirm production route behavior and page integration.
+- [x] Confirm production route behavior and page integration.
   - Check nested route behavior for `/games/ld30/`
   - Validate the canvas, loading/error states, and browser console behavior in the deployed setup.

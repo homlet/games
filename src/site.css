@@ -259,6 +259,13 @@ p {
   line-height: 1.7;
 }
 
+.game-description__controls {
+  margin-top: 12px;
+  color: var(--accent) !important;
+  font-family: ui-monospace, monospace;
+  font-size: 0.78rem;
+}
+
 @media (max-width: 520px) {
   .site-shell {
     width: min(100% - 32px, 1120px);
