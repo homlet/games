@@ -32,6 +32,7 @@
     image-rendering: pixelated;
     image-rendering: crisp-edges;
     background: #523e29;
+    touch-action: none;
 }
 
 .ld30-stage-status {

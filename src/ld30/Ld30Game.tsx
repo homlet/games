@@ -24,10 +24,12 @@ import {
     resetMarblesToStarts,
     smoothTilt,
     stepMarble,
+    type DirectionInput,
     type MarbleState,
     type Point,
     type TargetState,
 } from "./physics";
+import { getOrientationDirectionInput } from "./mobileControls";
 import {
     HOMLETMOO_RECORD_SECONDS,
     MIN_END_DELAY_MS,
@@ -324,6 +326,9 @@ export function Ld30Game() {
         "loading",
     );
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [controlHint, setControlHint] = useState(
+        "Touch to advance • Tilt to steer • Arrows / WASD",
+    );
     const engineRef = useRef<ex.Engine | null>(null);
     const audioRef = useRef<Ld30AudioManager | null>(null);
 
@@ -347,6 +352,59 @@ export function Ld30Game() {
                 canvas.setAttribute("aria-label", "Marble Run game canvas");
                 canvas.setAttribute("tabindex", "0");
                 host.replaceChildren(canvas);
+                let motionPermissionRequested = false;
+                const requestMotionPermission = async () => {
+                    if (motionPermissionRequested) {
+                        return;
+                    }
+                    motionPermissionRequested = true;
+
+                    if (!("DeviceOrientationEvent" in window)) {
+                        if (!cancelled) {
+                            setControlHint(
+                                "Tilt unavailable • Touch to advance • Arrows / WASD",
+                            );
+                        }
+                        return;
+                    }
+
+                    const orientationEvent =
+                        window.DeviceOrientationEvent as typeof DeviceOrientationEvent & {
+                            requestPermission?: () => Promise<PermissionState>;
+                        };
+                    try {
+                        if (
+                            typeof orientationEvent.requestPermission ===
+                            "function"
+                        ) {
+                            const permission =
+                                await orientationEvent.requestPermission();
+                            if (permission !== "granted") {
+                                if (!cancelled) {
+                                    setControlHint(
+                                        "Motion access denied • Touch to advance • Arrows / WASD",
+                                    );
+                                }
+                                return;
+                            }
+                        }
+                        if (!cancelled) {
+                            setControlHint(
+                                "Touch to advance • Tilt enabled • Arrows / WASD",
+                            );
+                        }
+                    } catch (error) {
+                        console.warn(
+                            "LD30 motion permission could not be requested.",
+                            error,
+                        );
+                        if (!cancelled) {
+                            setControlHint(
+                                "Motion unavailable • Touch to advance • Arrows / WASD",
+                            );
+                        }
+                    }
+                };
 
                 const engine = new ex.Engine({
                     width: CANVAS_WIDTH,
@@ -454,6 +512,12 @@ export function Ld30Game() {
                     "s",
                     "d",
                 ]);
+                let orientationInput: DirectionInput = {
+                    up: false,
+                    down: false,
+                    left: false,
+                    right: false,
+                };
                 const handleGameplayKeyDown = (event: KeyboardEvent) => {
                     const key = event.key.toLowerCase();
                     if (
@@ -467,13 +531,44 @@ export function Ld30Game() {
                 const handleGameplayKeyUp = (event: KeyboardEvent) => {
                     heldKeys.delete(event.key.toLowerCase());
                 };
-                const clearHeldKeys = () => heldKeys.clear();
-                const getDirectionInput = () => ({
-                    up: heldKeys.has("arrowup") || heldKeys.has("w"),
-                    down: heldKeys.has("arrowdown") || heldKeys.has("s"),
-                    left: heldKeys.has("arrowleft") || heldKeys.has("a"),
-                    right: heldKeys.has("arrowright") || heldKeys.has("d"),
+                const clearInputs = () => {
+                    heldKeys.clear();
+                    orientationInput = {
+                        up: false,
+                        down: false,
+                        left: false,
+                        right: false,
+                    };
+                };
+                const getDirectionInput = (): DirectionInput => ({
+                    up:
+                        heldKeys.has("arrowup") ||
+                        heldKeys.has("w") ||
+                        orientationInput.up,
+                    down:
+                        heldKeys.has("arrowdown") ||
+                        heldKeys.has("s") ||
+                        orientationInput.down,
+                    left:
+                        heldKeys.has("arrowleft") ||
+                        heldKeys.has("a") ||
+                        orientationInput.left,
+                    right:
+                        heldKeys.has("arrowright") ||
+                        heldKeys.has("d") ||
+                        orientationInput.right,
                 });
+                const handleDeviceOrientation = (
+                    event: DeviceOrientationEvent,
+                ) => {
+                    orientationInput = getOrientationDirectionInput(
+                        event.beta,
+                        event.gamma,
+                    );
+                };
+                const requestMotionPermissionFromTouch = () => {
+                    void requestMotionPermission();
+                };
                 const gameClock = {
                     sceneName: "splash" as SceneName,
                     levelIndex: 0,
@@ -655,11 +750,25 @@ export function Ld30Game() {
                         event.preventDefault();
                         void transitionToScene("level", 0);
                     };
+                    const handleStartFromTouch = (event: TouchEvent) => {
+                        event.preventDefault();
+                        requestMotionPermissionFromTouch();
+                        void transitionToScene("level", 0);
+                    };
                     window.addEventListener("keyup", handleStart, {
                         passive: false,
                     });
+                    canvas.addEventListener(
+                        "touchstart",
+                        handleStartFromTouch,
+                        { passive: false },
+                    );
                     menuScene.onDeactivate = () => {
                         window.removeEventListener("keyup", handleStart);
+                        canvas.removeEventListener(
+                            "touchstart",
+                            handleStartFromTouch,
+                        );
                     };
                 };
 
@@ -699,14 +808,14 @@ export function Ld30Game() {
                 };
 
                 const handleVisibilityChange = () => {
-                        heldKeys.clear();
+                        clearInputs();
                         if (activeLevelRuntime) {
                             activeLevelRuntime.accumulator = 0;
                         }
                 };
                 levelScene.onActivate = () => {
                     gameClock.levelElapsedMs = 0;
-                    heldKeys.clear();
+                    clearInputs();
                     void audioManager.unlock().then(() => {
                         audioManager.startRollingLoop();
                         audioManager.playBell();
@@ -715,7 +824,16 @@ export function Ld30Game() {
                         passive: false,
                     });
                     window.addEventListener("keyup", handleGameplayKeyUp);
-                    window.addEventListener("blur", clearHeldKeys);
+                    window.addEventListener("blur", clearInputs);
+                    window.addEventListener(
+                        "deviceorientation",
+                        handleDeviceOrientation,
+                    );
+                    canvas.addEventListener(
+                        "touchstart",
+                        requestMotionPermissionFromTouch,
+                        { passive: true },
+                    );
                     document.addEventListener(
                         "visibilitychange",
                         handleVisibilityChange,
@@ -750,7 +868,7 @@ export function Ld30Game() {
                         });
                     levelScene.onDeactivate = () => {
                         activeLevelRuntime = null;
-                        heldKeys.clear();
+                        clearInputs();
                         audioManager.stopRollingLoop();
                         window.removeEventListener(
                             "keydown",
@@ -760,7 +878,15 @@ export function Ld30Game() {
                             "keyup",
                             handleGameplayKeyUp,
                         );
-                        window.removeEventListener("blur", clearHeldKeys);
+                        window.removeEventListener("blur", clearInputs);
+                        window.removeEventListener(
+                            "deviceorientation",
+                            handleDeviceOrientation,
+                        );
+                        canvas.removeEventListener(
+                            "touchstart",
+                            requestMotionPermissionFromTouch,
+                        );
                         document.removeEventListener(
                             "visibilitychange",
                             handleVisibilityChange,
@@ -1043,11 +1169,32 @@ export function Ld30Game() {
                         event.preventDefault();
                         void transitionToScene("level", 0);
                     };
+                    const handleRestartFromTouch = (event: TouchEvent) => {
+                        event.preventDefault();
+                        requestMotionPermissionFromTouch();
+                        const elapsedSinceEnd =
+                            Date.now() - gameClock.endStartedAt;
+                        if (
+                            !shouldRestartAfterEndDelay(elapsedSinceEnd, false)
+                        ) {
+                            return;
+                        }
+                        void transitionToScene("level", 0);
+                    };
                     window.addEventListener("keyup", handleRestart, {
                         passive: false,
                     });
+                    canvas.addEventListener(
+                        "touchstart",
+                        handleRestartFromTouch,
+                        { passive: false },
+                    );
                     endScene.onDeactivate = () => {
                         window.removeEventListener("keyup", handleRestart);
+                        canvas.removeEventListener(
+                            "touchstart",
+                            handleRestartFromTouch,
+                        );
                     };
                 };
 
@@ -1131,8 +1278,7 @@ export function Ld30Game() {
             />
             <div className="ld30-stage-status" aria-live="polite">
                 {status === "loading" && "Loading Marble Run…"}
-                {status === "ready" &&
-                    "Keyboard required • Click or Tab, then use Arrows / WASD"}
+                {status === "ready" && controlHint}
                 {status === "error" &&
                     (errorMessage ?? "Asset loading failed. Refresh to retry.")}
             </div>
