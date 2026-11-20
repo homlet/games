@@ -32,6 +32,7 @@ import {
     PAR_SECONDS,
     SPLASH_DURATION_MS,
     formatElapsedTime,
+    getFlashpunkFrame,
     shouldRestartAfterEndDelay,
     shouldStartLevelFromReleasedKey,
 } from "./sceneTiming";
@@ -527,7 +528,7 @@ export function Ld30Game() {
 
                 const splashFlashpunkActor = new ex.Actor({
                     x: 200,
-                    y: 200,
+                    y: 400,
                     width: 400,
                     height: 400,
                     z: 1,
@@ -550,10 +551,7 @@ export function Ld30Game() {
                         gameClock.totalElapsedMs,
                         SPLASH_DURATION_MS,
                     );
-                    const flashFrame = Math.min(
-                        4,
-                        Math.floor(elapsedMs / 125),
-                    );
+                    const flashFrame = getFlashpunkFrame(elapsedMs);
                     splashFlashpunkActor.graphics.use(
                         ex.Sprite.from(flashpunkSource, {
                             sourceView: {
@@ -967,25 +965,43 @@ export function Ld30Game() {
                     x: CANVAS_WIDTH / 2,
                     y: 210,
                     color: ex.Color.fromHex("#040200"),
-                    font: new ex.Font({ size: 64, family: "sans-serif" }),
+                    font: new ex.Font({
+                        size: 64,
+                        family: "sans-serif",
+                        textAlign: ex.TextAlign.Center,
+                        baseAlign: ex.BaseAlign.Top,
+                    }),
+                    z: 2,
                 });
                 endScene.add(endTimeLabel);
 
                 const parLabel = new ex.Label({
-                    text: `Par: ${PAR_SECONDS}s`,
+                    text: `Par: ${formatElapsedTime(PAR_SECONDS * 1000)}`,
                     x: CANVAS_WIDTH / 2,
                     y: 290,
                     color: ex.Color.fromHex("#271603"),
-                    font: new ex.Font({ size: 64, family: "sans-serif" }),
+                    font: new ex.Font({
+                        size: 64,
+                        family: "sans-serif",
+                        textAlign: ex.TextAlign.Center,
+                        baseAlign: ex.BaseAlign.Top,
+                    }),
+                    z: 2,
                 });
                 endScene.add(parLabel);
 
                 const recordLabel = new ex.Label({
-                    text: `Homletmoo: ${HOMLETMOO_RECORD_SECONDS}s`,
+                    text: `Homletmoo: ${formatElapsedTime(HOMLETMOO_RECORD_SECONDS * 1000)}`,
                     x: CANVAS_WIDTH / 2,
                     y: 370,
                     color: ex.Color.fromHex("#271603"),
-                    font: new ex.Font({ size: 64, family: "sans-serif" }),
+                    font: new ex.Font({
+                        size: 64,
+                        family: "sans-serif",
+                        textAlign: ex.TextAlign.Center,
+                        baseAlign: ex.BaseAlign.Top,
+                    }),
+                    z: 2,
                 });
                 endScene.add(recordLabel);
 
@@ -994,6 +1010,7 @@ export function Ld30Game() {
                     y: CANVAS_HEIGHT / 2,
                     width: CANVAS_WIDTH,
                     height: CANVAS_HEIGHT,
+                    z: 1,
                 });
                 endForeground.graphics.use(foregroundSprite.clone());
                 endScene.add(endForeground);

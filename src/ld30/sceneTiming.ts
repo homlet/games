@@ -16,6 +16,10 @@ export const MIN_END_DELAY_MS = 3000;
 export const PAR_SECONDS = 160;
 export const HOMLETMOO_RECORD_SECONDS = 123;
 
+export function getFlashpunkFrame(elapsedMs: number): number {
+    return Math.floor(elapsedMs / 125) % 4;
+}
+
 export function formatElapsedTime(totalMs: number): string {
     const totalSeconds = Math.max(0, Math.floor(totalMs / 1000));
     const minutes = Math.floor(totalSeconds / 60);

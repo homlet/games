@@ -46,14 +46,14 @@ export const ld30ImageAssets = {
 
 export const ld30LevelMapAssets = [
     level01,
-    level02,
-    level03,
-    level04,
-    level05,
-    level06,
-    level07,
-    level08,
-    level09,
+    // level02,
+    // level03,
+    // level04,
+    // level05,
+    // level06,
+    // level07,
+    // level08,
+    // level09,
 ] as const;
 
 export const ld30SoundAssets = {

@@ -7,9 +7,17 @@ import {
     PAR_SECONDS,
     SPLASH_DURATION_MS,
     formatElapsedTime,
+    getFlashpunkFrame,
     shouldRestartAfterEndDelay,
     shouldStartLevelFromReleasedKey,
 } from "./sceneTiming.ts";
+
+test("FlashPunk splash animation loops through its four 8 fps frames", () => {
+    assert.deepEqual(
+        [0, 125, 375, 500, 875].map(getFlashpunkFrame),
+        [0, 1, 3, 0, 3],
+    );
+});
 
 test("elapsed time uses whole seconds and m:ss formatting", () => {
     assert.equal(formatElapsedTime(0), "0:00");
