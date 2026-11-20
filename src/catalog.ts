@@ -18,7 +18,7 @@ export const games: Game[] = [
         blurb: "Guide a marble through a series of hand-built courses.",
         cover: marbleRunCover,
         coverAlt: "Marble Run title artwork",
-        path: "/games/ld30/",
+        path: "./games/ld30/",
     },
 ];
 

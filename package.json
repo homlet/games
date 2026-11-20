@@ -9,6 +9,7 @@
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "test": "node --experimental-strip-types --test src/ld30/*.test.ts",
     "typecheck": "tsc --noEmit",
+    "deploy": "bash scripts/deploy.sh",
     "preview": "vite preview"
   },
   "dependencies": {

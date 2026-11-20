@@ -21,11 +21,17 @@ const GameCard = ({ game }: { game: Game }) => {
     );
 };
 
+const homePath = document
+    .querySelector("#root")
+    ?.getAttribute("data-page") === "game"
+    ? "../../"
+    : "./";
+
 const HomePage = () => {
     return (
         <main className="site-shell">
             <header className="site-header">
-                <a className="wordmark" href="/" aria-label="Homlet Games home">
+                <a className="wordmark" href={homePath} aria-label="Homlet Games home">
                     homlet<span>.</span>
                 </a>
                 <span className="header-note">A collection of games</span>
@@ -54,7 +60,7 @@ const GamePage = ({ game }: { game: Game | undefined }) => {
     if (!game) {
         return (
             <main className="site-shell game-page">
-                <a className="back-link" href="/">
+                <a className="back-link" href={homePath}>
                     ← <span>All games</span>
                 </a>
                 <h1>Game not found</h1>
@@ -65,7 +71,7 @@ const GamePage = ({ game }: { game: Game | undefined }) => {
 
     return (
         <main className="site-shell game-page">
-            <a className="back-link" href="/">
+            <a className="back-link" href={homePath}>
                 ← <span>All games</span>
             </a>
             <section
