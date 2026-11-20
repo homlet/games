@@ -569,6 +569,13 @@ export function Ld30Game() {
                 const requestMotionPermissionFromTouch = () => {
                     void requestMotionPermission();
                 };
+                const requestMotionPermissionFromPointer = (
+                    event: PointerEvent,
+                ) => {
+                    if (event.pointerType === "touch") {
+                        requestMotionPermissionFromTouch();
+                    }
+                };
                 const gameClock = {
                     sceneName: "splash" as SceneName,
                     levelIndex: 0,
@@ -751,13 +758,17 @@ export function Ld30Game() {
                         void transitionToScene("level", 0);
                     };
                     const handleStartFromTouch = (event: TouchEvent) => {
-                        event.preventDefault();
                         requestMotionPermissionFromTouch();
+                        event.preventDefault();
                         void transitionToScene("level", 0);
                     };
                     window.addEventListener("keyup", handleStart, {
                         passive: false,
                     });
+                    canvas.addEventListener(
+                        "pointerdown",
+                        requestMotionPermissionFromPointer,
+                    );
                     canvas.addEventListener(
                         "touchstart",
                         handleStartFromTouch,
@@ -765,6 +776,10 @@ export function Ld30Game() {
                     );
                     menuScene.onDeactivate = () => {
                         window.removeEventListener("keyup", handleStart);
+                        canvas.removeEventListener(
+                            "pointerdown",
+                            requestMotionPermissionFromPointer,
+                        );
                         canvas.removeEventListener(
                             "touchstart",
                             handleStartFromTouch,
@@ -830,6 +845,10 @@ export function Ld30Game() {
                         handleDeviceOrientation,
                     );
                     canvas.addEventListener(
+                        "pointerdown",
+                        requestMotionPermissionFromPointer,
+                    );
+                    canvas.addEventListener(
                         "touchstart",
                         requestMotionPermissionFromTouch,
                         { passive: true },
@@ -882,6 +901,10 @@ export function Ld30Game() {
                         window.removeEventListener(
                             "deviceorientation",
                             handleDeviceOrientation,
+                        );
+                        canvas.removeEventListener(
+                            "pointerdown",
+                            requestMotionPermissionFromPointer,
                         );
                         canvas.removeEventListener(
                             "touchstart",
@@ -1170,8 +1193,8 @@ export function Ld30Game() {
                         void transitionToScene("level", 0);
                     };
                     const handleRestartFromTouch = (event: TouchEvent) => {
-                        event.preventDefault();
                         requestMotionPermissionFromTouch();
+                        event.preventDefault();
                         const elapsedSinceEnd =
                             Date.now() - gameClock.endStartedAt;
                         if (
@@ -1185,12 +1208,20 @@ export function Ld30Game() {
                         passive: false,
                     });
                     canvas.addEventListener(
+                        "pointerdown",
+                        requestMotionPermissionFromPointer,
+                    );
+                    canvas.addEventListener(
                         "touchstart",
                         handleRestartFromTouch,
                         { passive: false },
                     );
                     endScene.onDeactivate = () => {
                         window.removeEventListener("keyup", handleRestart);
+                        canvas.removeEventListener(
+                            "pointerdown",
+                            requestMotionPermissionFromPointer,
+                        );
                         canvas.removeEventListener(
                             "touchstart",
                             handleRestartFromTouch,
