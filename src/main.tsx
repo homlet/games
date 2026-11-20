@@ -21,17 +21,20 @@ const GameCard = ({ game }: { game: Game }) => {
     );
 };
 
-const homePath = document
-    .querySelector("#root")
-    ?.getAttribute("data-page") === "game"
-    ? "../../"
-    : "./";
+const homePath =
+    document.querySelector("#root")?.getAttribute("data-page") === "game"
+        ? "../"
+        : "./";
 
 const HomePage = () => {
     return (
         <main className="site-shell">
             <header className="site-header">
-                <a className="wordmark" href={homePath} aria-label="Homlet Games home">
+                <a
+                    className="wordmark"
+                    href={homePath}
+                    aria-label="Homlet Games home"
+                >
                     homlet<span>.</span>
                 </a>
                 <span className="header-note">A collection of games</span>
@@ -96,8 +99,8 @@ const GamePage = ({ game }: { game: Game | undefined }) => {
                     <p>{game.blurb}</p>
                     {game.slug === "ld30" && (
                         <p className="game-description__controls">
-                            Keyboard-only game: click or Tab to the game, then use
-                            the arrow keys or WASD.
+                            Keyboard-only game: click or Tab to the game, then
+                            use the arrow keys or WASD.
                         </p>
                     )}
                 </div>
