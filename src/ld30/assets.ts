@@ -7,6 +7,7 @@ import marbleImage from "../../archive/ld30/src/uk/co/homletmoo/ld30/assets/imag
 import marblePartsImage from "../../archive/ld30/src/uk/co/homletmoo/ld30/assets/images/marble_parts.png";
 import tilesImage from "../../archive/ld30/src/uk/co/homletmoo/ld30/assets/images/tiles.png";
 import titleImage from "../../archive/ld30/src/uk/co/homletmoo/ld30/assets/images/title.png";
+import flashpunkPixelFont from "./fonts/04B_03__.TTF?url";
 
 import level01 from "../../archive/ld30/src/uk/co/homletmoo/ld30/assets/levels/01.png";
 import level02 from "../../archive/ld30/src/uk/co/homletmoo/ld30/assets/levels/02.png";
@@ -44,16 +45,43 @@ export const ld30ImageAssets = {
     foreground: foregroundImage,
 } as const;
 
+export const ld30FontAssets = {
+    flashpunkPixel: flashpunkPixelFont,
+} as const;
+
+export const ld30FontFamily = "LD30 FlashPunk";
+
+let ld30FontLoadPromise: Promise<void> | null = null;
+
+export function loadLd30Font(): Promise<void> {
+    if (!ld30FontLoadPromise) {
+        ld30FontLoadPromise = new FontFace(
+            ld30FontFamily,
+            `url("${ld30FontAssets.flashpunkPixel}")`,
+        )
+            .load()
+            .then((fontFace) => {
+                document.fonts.add(fontFace);
+            })
+            .catch((error: unknown) => {
+                ld30FontLoadPromise = null;
+                throw error;
+            });
+    }
+
+    return ld30FontLoadPromise;
+}
+
 export const ld30LevelMapAssets = [
     level01,
-    // level02,
-    // level03,
-    // level04,
-    // level05,
-    // level06,
-    // level07,
-    // level08,
-    // level09,
+    level02,
+    level03,
+    level04,
+    level05,
+    level06,
+    level07,
+    level08,
+    level09,
 ] as const;
 
 export const ld30SoundAssets = {
@@ -82,6 +110,7 @@ const ld30AssetEntries = [
     ["title", ld30ImageAssets.title],
     ["background", ld30ImageAssets.background],
     ["foreground", ld30ImageAssets.foreground],
+    ["FlashPunk pixel font", ld30FontAssets.flashpunkPixel],
     ...ld30LevelMapAssets.map(
         (level, index) => [`level ${index + 1}`, level] as const,
     ),

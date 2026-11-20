@@ -3,7 +3,9 @@ import * as ex from "excalibur";
 import {
     ld30ImageAssets,
     ld30LevelMapAssets,
+    ld30FontFamily,
     ld30SoundAssets,
+    loadLd30Font,
     validateLd30Assets,
 } from "./assets";
 import { Ld30AudioManager } from "./audio";
@@ -336,6 +338,7 @@ export function Ld30Game() {
         const bootstrapEngine = async () => {
             try {
                 validateLd30Assets();
+                await loadLd30Font();
 
                 const canvas = document.createElement("canvas");
                 canvas.width = CANVAS_WIDTH;
@@ -663,13 +666,14 @@ export function Ld30Game() {
                 const levelScene = new ex.Scene();
                 const timerLabel = new ex.Label({
                     text: "0:00",
-                    x: 36,
-                    y: 20,
+                    x: 16,
+                    y: 16,
                     color: ex.Color.fromHex("#EDCF9B"),
                     font: new ex.Font({
-                        size: 20,
-                        family: "sans-serif",
-                        textAlign: ex.TextAlign.Center,
+                        size: 32,
+                        family: ld30FontFamily,
+                        textAlign: ex.TextAlign.Left,
+                        baseAlign: ex.BaseAlign.Top,
                     }),
                 });
                 timerLabel.opacity = 1;
@@ -967,7 +971,7 @@ export function Ld30Game() {
                     color: ex.Color.fromHex("#040200"),
                     font: new ex.Font({
                         size: 64,
-                        family: "sans-serif",
+                        family: ld30FontFamily,
                         textAlign: ex.TextAlign.Center,
                         baseAlign: ex.BaseAlign.Top,
                     }),
@@ -982,7 +986,7 @@ export function Ld30Game() {
                     color: ex.Color.fromHex("#271603"),
                     font: new ex.Font({
                         size: 64,
-                        family: "sans-serif",
+                        family: ld30FontFamily,
                         textAlign: ex.TextAlign.Center,
                         baseAlign: ex.BaseAlign.Top,
                     }),
@@ -997,7 +1001,7 @@ export function Ld30Game() {
                     color: ex.Color.fromHex("#271603"),
                     font: new ex.Font({
                         size: 64,
-                        family: "sans-serif",
+                        family: ld30FontFamily,
                         textAlign: ex.TextAlign.Center,
                         baseAlign: ex.BaseAlign.Top,
                     }),

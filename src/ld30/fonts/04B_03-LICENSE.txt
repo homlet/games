@@ -1,0 +1,11 @@
+04B_03__.TTF
+Copyright: 1999-2003 Yuji Oshimoto
+Source: http://www.04.jp.org/
+License information: https://www.dsg4.com/04/extra/bitmap/about.html
+
+This font is freeware. Non-commercial distribution, transfer, and reproduction
+are permitted. Use in or attachment to commercial products, or sale, requires
+permission from the author.
+
+The font is bundled by FlashPunk v1.7.2 and is not covered by the FlashPunk
+project's MIT license.
