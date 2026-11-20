@@ -1093,6 +1093,11 @@ export function Ld30Game() {
             className="ld30-game"
             tabIndex={0}
             aria-label="Marble Run game stage"
+            onKeyDown={(event) => {
+                if (event.code === "Space") {
+                    event.preventDefault();
+                }
+            }}
         >
             <div
                 ref={hostRef}
