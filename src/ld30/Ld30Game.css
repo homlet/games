@@ -45,6 +45,20 @@
     text-transform: uppercase;
 }
 
+.ld30-motion-debug {
+    overflow-wrap: anywhere;
+    margin: 0;
+    padding: 12px;
+    border: 1px solid rgb(157 161 150 / 25%);
+    border-radius: 6px;
+    background: rgb(0 0 0 / 20%);
+    color: var(--muted);
+    font-family: ui-monospace, monospace;
+    font-size: 0.7rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
 @media (max-width: 640px) {
     .ld30-canvas-shell {
         border-radius: 0;

@@ -329,6 +329,9 @@ export function Ld30Game() {
     const [controlHint, setControlHint] = useState(
         "Touch to advance • Tilt to steer • Arrows / WASD",
     );
+    const [motionDebug, setMotionDebug] = useState(
+        "Motion diagnostics: waiting for game startup",
+    );
     const engineRef = useRef<ex.Engine | null>(null);
     const audioRef = useRef<Ld30AudioManager | null>(null);
 
@@ -353,6 +356,49 @@ export function Ld30Game() {
                 canvas.setAttribute("tabindex", "0");
                 host.replaceChildren(canvas);
                 let motionPermissionRequested = false;
+                let motionPermissionStatus = "not requested";
+                let motionListenerInstalled = false;
+                let motionEventCount = 0;
+                let lastMotionEventAt: number | null = null;
+                let lastMotionLogAt = 0;
+                let motionGestureText = "none";
+                let lastAccelerationText = "no sensor event received";
+                let lastDeltaText = "waiting for baseline";
+                let lastMotionInputText = "none";
+                let motionBaseline: Point | null = null;
+                const formatSensorValue = (value: number | null | undefined) =>
+                    value == null || !Number.isFinite(value)
+                        ? "n/a"
+                        : value.toFixed(2);
+                const publishMotionDebug = () => {
+                    if (cancelled) {
+                        return;
+                    }
+                    const motionConstructor = (
+                        "DeviceMotionEvent" in window
+                            ? window.DeviceMotionEvent
+                            : undefined
+                    ) as
+                        | (typeof DeviceMotionEvent & {
+                              requestPermission?: () => Promise<PermissionState>;
+                          })
+                        | undefined;
+                    setMotionDebug(
+                        [
+                            `Motion diagnostics | secure context: ${window.isSecureContext}`,
+                            `DeviceMotionEvent: ${motionConstructor ? "available" : "missing"} | requestPermission: ${typeof motionConstructor?.requestPermission === "function" ? "available" : "not exposed"}`,
+                            `Permission: ${motionPermissionStatus} | listener: ${motionListenerInstalled ? "installed" : "not installed"}`,
+                            `Last permission gesture: ${motionGestureText}`,
+                            `Events: ${motionEventCount}${lastMotionEventAt === null ? "" : ` | last event at: ${Math.round(lastMotionEventAt)}ms after page load`}`,
+                            `Acceleration incl. gravity (x,y,z): ${lastAccelerationText}`,
+                            `Tilt baseline: ${motionBaseline ? `${formatSensorValue(motionBaseline.x)}, ${formatSensorValue(motionBaseline.y)}` : "waiting for first valid event"}`,
+                            `Relative acceleration (x,y): ${lastDeltaText}`,
+                            `Current tilt input: ${lastMotionInputText}`,
+                            `Browser: ${navigator.userAgent}`,
+                        ].join("\n"),
+                    );
+                };
+                publishMotionDebug();
                 const requestMotionPermission = async () => {
                     if (motionPermissionRequested) {
                         return;
@@ -360,11 +406,13 @@ export function Ld30Game() {
                     motionPermissionRequested = true;
 
                     if (!("DeviceMotionEvent" in window)) {
+                        motionPermissionStatus = "DeviceMotionEvent is missing";
                         if (!cancelled) {
                             setControlHint(
                                 "Tilt unavailable • Touch to advance • Arrows / WASD",
                             );
                         }
+                        publishMotionDebug();
                         return;
                     }
 
@@ -373,26 +421,38 @@ export function Ld30Game() {
                             requestPermission?: () => Promise<PermissionState>;
                         };
                     try {
+                        motionPermissionStatus =
+                            "requesting from touch gesture";
+                        publishMotionDebug();
                         if (
                             typeof motionEvent.requestPermission === "function"
                         ) {
                             const permission =
                                 await motionEvent.requestPermission();
+                            motionPermissionStatus = permission;
                             if (permission !== "granted") {
+                                motionPermissionRequested = false;
                                 if (!cancelled) {
                                     setControlHint(
                                         "Motion access denied • Touch to advance • Arrows / WASD",
                                     );
                                 }
+                                publishMotionDebug();
                                 return;
                             }
+                        } else {
+                            motionPermissionStatus =
+                                "permission method not exposed; listening";
                         }
                         if (!cancelled) {
                             setControlHint(
                                 "Touch to advance • Tilt enabled • Arrows / WASD",
                             );
                         }
+                        publishMotionDebug();
                     } catch (error) {
+                        motionPermissionStatus = `request failed: ${error instanceof Error ? `${error.name}: ${error.message}` : String(error)}`;
+                        motionPermissionRequested = false;
                         console.warn(
                             "LD30 motion permission could not be requested.",
                             error,
@@ -402,6 +462,7 @@ export function Ld30Game() {
                                 "Motion unavailable • Touch to advance • Arrows / WASD",
                             );
                         }
+                        publishMotionDebug();
                     }
                 };
 
@@ -517,7 +578,6 @@ export function Ld30Game() {
                     left: false,
                     right: false,
                 };
-                let motionBaseline: Point | null = null;
                 const handleGameplayKeyDown = (event: KeyboardEvent) => {
                     const key = event.key.toLowerCase();
                     if (
@@ -559,9 +619,12 @@ export function Ld30Game() {
                         motionInput.right,
                 });
                 const handleDeviceMotion = (event: DeviceMotionEvent) => {
+                    motionEventCount += 1;
+                    lastMotionEventAt = performance.now();
                     const acceleration = event.accelerationIncludingGravity;
                     const x = acceleration?.x;
                     const y = acceleration?.y;
+                    lastAccelerationText = `${formatSensorValue(x)}, ${formatSensorValue(y)}, ${formatSensorValue(acceleration?.z)}`;
                     if (
                         x == null ||
                         y == null ||
@@ -574,27 +637,49 @@ export function Ld30Game() {
                             left: false,
                             right: false,
                         };
+                        lastMotionInputText =
+                            "none (x/y unavailable or non-finite)";
+                        if (lastMotionEventAt - lastMotionLogAt >= 250) {
+                            lastMotionLogAt = lastMotionEventAt;
+                            publishMotionDebug();
+                        }
                         return;
                     }
                     if (!motionBaseline) {
                         motionBaseline = { x, y };
+                        lastMotionInputText =
+                            "none (capturing neutral baseline)";
+                        lastDeltaText = "0.00, 0.00";
+                        publishMotionDebug();
                         return;
                     }
+                    lastDeltaText = `${formatSensorValue(x - motionBaseline.x)}, ${formatSensorValue(y - motionBaseline.y)}`;
                     motionInput = getAccelerationDirectionInput(
                         x,
                         y,
                         motionBaseline.x,
                         motionBaseline.y,
                     );
+                    lastMotionInputText = `up:${motionInput.up} down:${motionInput.down} left:${motionInput.left} right:${motionInput.right}`;
+                    if (lastMotionEventAt - lastMotionLogAt >= 250) {
+                        lastMotionLogAt = lastMotionEventAt;
+                        publishMotionDebug();
+                    }
                 };
-                const requestMotionPermissionFromTouch = () => {
+                const requestMotionPermissionFromTouch = (
+                    event?: TouchEvent | PointerEvent,
+                ) => {
+                    motionGestureText = event
+                        ? `${event.type} (trusted: ${event.isTrusted})`
+                        : "touch gesture";
+                    publishMotionDebug();
                     void requestMotionPermission();
                 };
                 const requestMotionPermissionFromPointer = (
                     event: PointerEvent,
                 ) => {
                     if (event.pointerType === "touch") {
-                        requestMotionPermissionFromTouch();
+                        requestMotionPermissionFromTouch(event);
                     }
                 };
                 const gameClock = {
@@ -779,7 +864,7 @@ export function Ld30Game() {
                         void transitionToScene("level", 0);
                     };
                     const handleStartFromTouch = (event: TouchEvent) => {
-                        requestMotionPermissionFromTouch();
+                        requestMotionPermissionFromTouch(event);
                         event.preventDefault();
                         void transitionToScene("level", 0);
                     };
@@ -863,6 +948,8 @@ export function Ld30Game() {
                     window.addEventListener("keyup", handleGameplayKeyUp);
                     window.addEventListener("blur", clearInputs);
                     window.addEventListener("devicemotion", handleDeviceMotion);
+                    motionListenerInstalled = true;
+                    publishMotionDebug();
                     canvas.addEventListener(
                         "pointerdown",
                         requestMotionPermissionFromPointer,
@@ -921,6 +1008,8 @@ export function Ld30Game() {
                             "devicemotion",
                             handleDeviceMotion,
                         );
+                        motionListenerInstalled = false;
+                        publishMotionDebug();
                         canvas.removeEventListener(
                             "pointerdown",
                             requestMotionPermissionFromPointer,
@@ -1212,7 +1301,7 @@ export function Ld30Game() {
                         void transitionToScene("level", 0);
                     };
                     const handleRestartFromTouch = (event: TouchEvent) => {
-                        requestMotionPermissionFromTouch();
+                        requestMotionPermissionFromTouch(event);
                         event.preventDefault();
                         const elapsedSinceEnd =
                             Date.now() - gameClock.endStartedAt;
@@ -1332,6 +1421,12 @@ export function Ld30Game() {
                 {status === "error" &&
                     (errorMessage ?? "Asset loading failed. Refresh to retry.")}
             </div>
+            <pre
+                className="ld30-motion-debug"
+                aria-label="Motion sensor diagnostics"
+            >
+                {motionDebug}
+            </pre>
         </div>
     );
 }
