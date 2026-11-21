@@ -20,9 +20,9 @@ export function getAccelerationDirectionInput(
             y < -ACCELERATION_DEAD_ZONE_METERS_PER_SECOND_SQUARED,
         left:
             Number.isFinite(x) &&
-            x > ACCELERATION_DEAD_ZONE_METERS_PER_SECOND_SQUARED,
+            x < -ACCELERATION_DEAD_ZONE_METERS_PER_SECOND_SQUARED,
         right:
             Number.isFinite(x) &&
-            x < -ACCELERATION_DEAD_ZONE_METERS_PER_SECOND_SQUARED,
+            x > ACCELERATION_DEAD_ZONE_METERS_PER_SECOND_SQUARED,
     };
 }

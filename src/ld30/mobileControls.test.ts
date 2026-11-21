@@ -10,14 +10,14 @@ test("device acceleration maps x and y gravity to directional input", () => {
     assert.deepEqual(getAccelerationDirectionInput(-3, 3), {
         up: true,
         down: false,
-        left: false,
-        right: true,
+        left: true,
+        right: false,
     });
     assert.deepEqual(getAccelerationDirectionInput(3, -3), {
         up: false,
         down: true,
-        left: true,
-        right: false,
+        left: false,
+        right: true,
     });
 });
 
@@ -41,7 +41,7 @@ test("device acceleration is measured relative to the neutral holding position",
     assert.deepEqual(getAccelerationDirectionInput(7, 11, 10, 8), {
         up: true,
         down: false,
-        left: false,
-        right: true,
+        left: true,
+        right: false,
     });
 });
