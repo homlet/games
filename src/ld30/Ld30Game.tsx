@@ -399,11 +399,13 @@ export function Ld30Game() {
                     );
                 };
                 publishMotionDebug();
-                const requestMotionPermission = async () => {
+                const requestMotionPermission = (
+                    event: TouchEvent | PointerEvent,
+                ) => {
                     if (motionPermissionRequested) {
                         return;
                     }
-                    motionPermissionRequested = true;
+                    motionGestureText = `${event.type} (trusted: ${event.isTrusted})`;
 
                     if (!("DeviceMotionEvent" in window)) {
                         motionPermissionStatus = "DeviceMotionEvent is missing";
@@ -420,50 +422,65 @@ export function Ld30Game() {
                         window.DeviceMotionEvent as typeof DeviceMotionEvent & {
                             requestPermission?: () => Promise<PermissionState>;
                         };
-                    try {
-                        motionPermissionStatus =
-                            "requesting from touch gesture";
+                    if (typeof motionEvent.requestPermission === "function") {
+                        motionPermissionRequested = true;
+                        let permissionRequest: Promise<PermissionState>;
+                        try {
+                            permissionRequest = motionEvent.requestPermission();
+                        } catch (error) {
+                            motionPermissionStatus = `request failed: ${error instanceof Error ? `${error.name}: ${error.message}` : String(error)}`;
+                            motionPermissionRequested = false;
+                            publishMotionDebug();
+                            return;
+                        }
+                        motionPermissionStatus = "request pending";
                         publishMotionDebug();
-                        if (
-                            typeof motionEvent.requestPermission === "function"
-                        ) {
-                            const permission =
-                                await motionEvent.requestPermission();
-                            motionPermissionStatus = permission;
-                            if (permission !== "granted") {
-                                motionPermissionRequested = false;
+                        void permissionRequest
+                            .then((permission) => {
+                                motionPermissionStatus = permission;
+                                if (permission !== "granted") {
+                                    motionPermissionRequested = false;
+                                    if (!cancelled) {
+                                        setControlHint(
+                                            "Motion access denied • Touch to advance • Arrows / WASD",
+                                        );
+                                    }
+                                    publishMotionDebug();
+                                    return;
+                                }
                                 if (!cancelled) {
                                     setControlHint(
-                                        "Motion access denied • Touch to advance • Arrows / WASD",
+                                        "Touch to advance • Tilt enabled • Arrows / WASD",
                                     );
                                 }
                                 publishMotionDebug();
-                                return;
-                            }
-                        } else {
-                            motionPermissionStatus =
-                                "permission method not exposed; listening";
-                        }
-                        if (!cancelled) {
-                            setControlHint(
-                                "Touch to advance • Tilt enabled • Arrows / WASD",
-                            );
-                        }
-                        publishMotionDebug();
-                    } catch (error) {
-                        motionPermissionStatus = `request failed: ${error instanceof Error ? `${error.name}: ${error.message}` : String(error)}`;
-                        motionPermissionRequested = false;
-                        console.warn(
-                            "LD30 motion permission could not be requested.",
-                            error,
-                        );
-                        if (!cancelled) {
-                            setControlHint(
-                                "Motion unavailable • Touch to advance • Arrows / WASD",
-                            );
-                        }
-                        publishMotionDebug();
+                            })
+                            .catch((error: unknown) => {
+                                motionPermissionStatus = `request failed: ${error instanceof Error ? `${error.name}: ${error.message}` : String(error)}`;
+                                motionPermissionRequested = false;
+                                console.warn(
+                                    "LD30 motion permission could not be requested.",
+                                    error,
+                                );
+                                if (!cancelled) {
+                                    setControlHint(
+                                        "Motion unavailable • Touch to advance • Arrows / WASD",
+                                    );
+                                }
+                                publishMotionDebug();
+                            });
+                        return;
                     }
+
+                    motionPermissionRequested = true;
+                    motionPermissionStatus =
+                        "permission method not exposed; listening";
+                    if (!cancelled) {
+                        setControlHint(
+                            "Touch to advance • Tilt enabled • Arrows / WASD",
+                        );
+                    }
+                    publishMotionDebug();
                 };
 
                 const engine = new ex.Engine({
@@ -667,13 +684,9 @@ export function Ld30Game() {
                     }
                 };
                 const requestMotionPermissionFromTouch = (
-                    event?: TouchEvent | PointerEvent,
+                    event: TouchEvent | PointerEvent,
                 ) => {
-                    motionGestureText = event
-                        ? `${event.type} (trusted: ${event.isTrusted})`
-                        : "touch gesture";
-                    publishMotionDebug();
-                    void requestMotionPermission();
+                    requestMotionPermission(event);
                 };
                 const requestMotionPermissionFromPointer = (
                     event: PointerEvent,
