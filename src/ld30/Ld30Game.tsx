@@ -355,6 +355,28 @@ export function Ld30Game() {
                 canvas.setAttribute("aria-label", "Marble Run game canvas");
                 canvas.setAttribute("tabindex", "0");
                 host.replaceChildren(canvas);
+                let lastTouchStartAt = Number.NEGATIVE_INFINITY;
+                canvas.addEventListener(
+                    "touchstart",
+                    () => {
+                        lastTouchStartAt = performance.now();
+                    },
+                    { passive: true },
+                );
+                const isTouchGeneratedClick = (event: MouseEvent) => {
+                    const pointerType =
+                        "pointerType" in event ? event.pointerType : undefined;
+                    const followedTouch =
+                        performance.now() - lastTouchStartAt < 1000;
+                    if (pointerType === "touch" || followedTouch) {
+                        lastTouchStartAt = Number.NEGATIVE_INFINITY;
+                    }
+                    return (
+                        event.isTrusted &&
+                        (pointerType === "touch" ||
+                            (event.detail > 0 && followedTouch))
+                    );
+                };
                 let motionPermissionRequested = false;
                 let motionPermissionStatus = "not requested";
                 let motionListenerInstalled = false;
@@ -399,9 +421,7 @@ export function Ld30Game() {
                     );
                 };
                 publishMotionDebug();
-                const requestMotionPermission = (
-                    event: TouchEvent | PointerEvent,
-                ) => {
+                const requestMotionPermission = (event: Event) => {
                     if (motionPermissionRequested) {
                         return;
                     }
@@ -683,18 +703,6 @@ export function Ld30Game() {
                         publishMotionDebug();
                     }
                 };
-                const requestMotionPermissionFromTouch = (
-                    event: TouchEvent | PointerEvent,
-                ) => {
-                    requestMotionPermission(event);
-                };
-                const requestMotionPermissionFromPointer = (
-                    event: PointerEvent,
-                ) => {
-                    if (event.pointerType === "touch") {
-                        requestMotionPermissionFromTouch(event);
-                    }
-                };
                 const gameClock = {
                     sceneName: "splash" as SceneName,
                     levelIndex: 0,
@@ -738,6 +746,27 @@ export function Ld30Game() {
                     await engine.goToScene(nextScene);
                     gameClock.transitionLocked = false;
                 };
+
+                const handleCanvasTap = (event: MouseEvent) => {
+                    if (!isTouchGeneratedClick(event)) {
+                        return;
+                    }
+                    requestMotionPermission(event);
+                    if (gameClock.sceneName === "menu") {
+                        event.preventDefault();
+                        void transitionToScene("level", 0);
+                    } else if (
+                        gameClock.sceneName === "end" &&
+                        shouldRestartAfterEndDelay(
+                            Date.now() - gameClock.endStartedAt,
+                            false,
+                        )
+                    ) {
+                        event.preventDefault();
+                        void transitionToScene("level", 0);
+                    }
+                };
+                canvas.addEventListener("click", handleCanvasTap);
 
                 const splashScene = new ex.Scene();
                 const splashHmActor = new ex.Actor({
@@ -876,33 +905,11 @@ export function Ld30Game() {
                         event.preventDefault();
                         void transitionToScene("level", 0);
                     };
-                    const handleStartFromTouch = (event: TouchEvent) => {
-                        requestMotionPermissionFromTouch(event);
-                        event.preventDefault();
-                        void transitionToScene("level", 0);
-                    };
                     window.addEventListener("keyup", handleStart, {
                         passive: false,
                     });
-                    canvas.addEventListener(
-                        "pointerdown",
-                        requestMotionPermissionFromPointer,
-                    );
-                    canvas.addEventListener(
-                        "touchstart",
-                        handleStartFromTouch,
-                        { passive: false },
-                    );
                     menuScene.onDeactivate = () => {
                         window.removeEventListener("keyup", handleStart);
-                        canvas.removeEventListener(
-                            "pointerdown",
-                            requestMotionPermissionFromPointer,
-                        );
-                        canvas.removeEventListener(
-                            "touchstart",
-                            handleStartFromTouch,
-                        );
                     };
                 };
 
@@ -963,15 +970,6 @@ export function Ld30Game() {
                     window.addEventListener("devicemotion", handleDeviceMotion);
                     motionListenerInstalled = true;
                     publishMotionDebug();
-                    canvas.addEventListener(
-                        "pointerdown",
-                        requestMotionPermissionFromPointer,
-                    );
-                    canvas.addEventListener(
-                        "touchstart",
-                        requestMotionPermissionFromTouch,
-                        { passive: true },
-                    );
                     document.addEventListener(
                         "visibilitychange",
                         handleVisibilityChange,
@@ -1023,14 +1021,6 @@ export function Ld30Game() {
                         );
                         motionListenerInstalled = false;
                         publishMotionDebug();
-                        canvas.removeEventListener(
-                            "pointerdown",
-                            requestMotionPermissionFromPointer,
-                        );
-                        canvas.removeEventListener(
-                            "touchstart",
-                            requestMotionPermissionFromTouch,
-                        );
                         document.removeEventListener(
                             "visibilitychange",
                             handleVisibilityChange,
@@ -1313,40 +1303,11 @@ export function Ld30Game() {
                         event.preventDefault();
                         void transitionToScene("level", 0);
                     };
-                    const handleRestartFromTouch = (event: TouchEvent) => {
-                        requestMotionPermissionFromTouch(event);
-                        event.preventDefault();
-                        const elapsedSinceEnd =
-                            Date.now() - gameClock.endStartedAt;
-                        if (
-                            !shouldRestartAfterEndDelay(elapsedSinceEnd, false)
-                        ) {
-                            return;
-                        }
-                        void transitionToScene("level", 0);
-                    };
                     window.addEventListener("keyup", handleRestart, {
                         passive: false,
                     });
-                    canvas.addEventListener(
-                        "pointerdown",
-                        requestMotionPermissionFromPointer,
-                    );
-                    canvas.addEventListener(
-                        "touchstart",
-                        handleRestartFromTouch,
-                        { passive: false },
-                    );
                     endScene.onDeactivate = () => {
                         window.removeEventListener("keyup", handleRestart);
-                        canvas.removeEventListener(
-                            "pointerdown",
-                            requestMotionPermissionFromPointer,
-                        );
-                        canvas.removeEventListener(
-                            "touchstart",
-                            handleRestartFromTouch,
-                        );
                     };
                 };
 
