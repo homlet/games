@@ -29,7 +29,12 @@ import {
     type Point,
     type TargetState,
 } from "./physics";
-import { getAccelerationDirectionInput } from "./mobileControls";
+import {
+    ACCELERATION_DEAD_ZONE_METERS_PER_SECOND_SQUARED,
+    GAME_UNITS_PER_METER,
+    getAccelerationDirectionInput,
+    smoothSensorAcceleration,
+} from "./mobileControls";
 import {
     HOMLETMOO_RECORD_SECONDS,
     MIN_END_DELAY_MS,
@@ -332,6 +337,16 @@ export function Ld30Game() {
     const [motionDebug, setMotionDebug] = useState(
         "Motion diagnostics: waiting for game startup",
     );
+    const [motionDeadZone, setMotionDeadZone] = useState(
+        ACCELERATION_DEAD_ZONE_METERS_PER_SECOND_SQUARED,
+    );
+    const [motionGain, setMotionGain] = useState(GAME_UNITS_PER_METER);
+    const [motionSmoothing, setMotionSmoothing] = useState(0);
+    const motionTuningRef = useRef({
+        deadZone: ACCELERATION_DEAD_ZONE_METERS_PER_SECOND_SQUARED,
+        gain: GAME_UNITS_PER_METER,
+        smoothing: 0,
+    });
     const engineRef = useRef<ex.Engine | null>(null);
     const audioRef = useRef<Ld30AudioManager | null>(null);
 
@@ -386,8 +401,10 @@ export function Ld30Game() {
                 let motionGestureText = "none";
                 let lastAccelerationText = "no sensor event received";
                 let lastDeltaText = "waiting for baseline";
+                let lastFilteredDeltaText = "waiting for baseline";
                 let lastMotionInputText = "none";
                 let motionBaseline: Point | null = null;
+                let filteredMotionDelta: Point | null = null;
                 const formatSensorValue = (value: number | null | undefined) =>
                     value == null || !Number.isFinite(value)
                         ? "n/a"
@@ -415,7 +432,9 @@ export function Ld30Game() {
                             `Acceleration incl. gravity (x,y,z): ${lastAccelerationText}`,
                             `Tilt baseline: ${motionBaseline ? `${formatSensorValue(motionBaseline.x)}, ${formatSensorValue(motionBaseline.y)}` : "waiting for first valid event"}`,
                             `Relative acceleration (x,y): ${lastDeltaText}`,
+                            `Filtered acceleration (x,y): ${lastFilteredDeltaText}`,
                             `Current tilt input: ${lastMotionInputText}`,
+                            `Tuning: dead zone ${motionTuningRef.current.deadZone.toFixed(2)} m/s² | gain ${motionTuningRef.current.gain} units/m/s² | smoothing ${(motionTuningRef.current.smoothing * 100).toFixed(0)}%`,
                             `Browser: ${navigator.userAgent}`,
                         ].join("\n"),
                     );
@@ -640,6 +659,7 @@ export function Ld30Game() {
                         accelerationX: 0,
                         accelerationY: 0,
                     };
+                    filteredMotionDelta = null;
                 };
                 const getDirectionInput = (): DirectionInput => ({
                     up:
@@ -682,6 +702,7 @@ export function Ld30Game() {
                             accelerationX: 0,
                             accelerationY: 0,
                         };
+                        filteredMotionDelta = null;
                         lastMotionInputText =
                             "none (x/y unavailable or non-finite)";
                         if (lastMotionEventAt - lastMotionLogAt >= 250) {
@@ -692,18 +713,32 @@ export function Ld30Game() {
                     }
                     if (!motionBaseline) {
                         motionBaseline = { x, y };
+                        filteredMotionDelta = { x: 0, y: 0 };
                         lastMotionInputText =
                             "none (capturing neutral baseline)";
                         lastDeltaText = "0.00, 0.00";
+                        lastFilteredDeltaText = "0.00, 0.00";
                         publishMotionDebug();
                         return;
                     }
-                    lastDeltaText = `${formatSensorValue(x - motionBaseline.x)}, ${formatSensorValue(y - motionBaseline.y)}`;
+                    const relativeAcceleration = {
+                        x: x - motionBaseline.x,
+                        y: y - motionBaseline.y,
+                    };
+                    lastDeltaText = `${formatSensorValue(relativeAcceleration.x)}, ${formatSensorValue(relativeAcceleration.y)}`;
+                    filteredMotionDelta = smoothSensorAcceleration(
+                        filteredMotionDelta,
+                        relativeAcceleration,
+                        motionTuningRef.current.smoothing,
+                    );
+                    lastFilteredDeltaText = `${formatSensorValue(filteredMotionDelta.x)}, ${formatSensorValue(filteredMotionDelta.y)}`;
                     motionInput = getAccelerationDirectionInput(
-                        x,
-                        y,
-                        motionBaseline.x,
-                        motionBaseline.y,
+                        filteredMotionDelta.x,
+                        filteredMotionDelta.y,
+                        0,
+                        0,
+                        motionTuningRef.current.deadZone,
+                        motionTuningRef.current.gain,
                     );
                     lastMotionInputText = `acceleration x:${formatSensorValue(motionInput.accelerationX)} y:${formatSensorValue(motionInput.accelerationY)} game units/s²`;
                     if (lastMotionEventAt - lastMotionLogAt >= 250) {
@@ -1403,6 +1438,89 @@ export function Ld30Game() {
                 {status === "error" &&
                     (errorMessage ?? "Asset loading failed. Refresh to retry.")}
             </div>
+            <section
+                className="ld30-motion-controls"
+                aria-labelledby="ld30-motion-controls-heading"
+            >
+                <h2 id="ld30-motion-controls-heading">
+                    Temporary motion tuning
+                </h2>
+                <p>
+                    Changes apply immediately and reset when the page reloads.
+                </p>
+                <label className="ld30-motion-control">
+                    <span>
+                        Dead zone{" "}
+                        <output>{motionDeadZone.toFixed(2)} m/s²</output>
+                    </span>
+                    <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={motionDeadZone}
+                        onChange={(event) => {
+                            const value = Number(event.currentTarget.value);
+                            motionTuningRef.current.deadZone = value;
+                            setMotionDeadZone(value);
+                        }}
+                    />
+                </label>
+                <label className="ld30-motion-control">
+                    <span>
+                        Acceleration gain{" "}
+                        <output>{motionGain} game units/m/s²</output>
+                    </span>
+                    <input
+                        type="range"
+                        min="0"
+                        max="400"
+                        step="10"
+                        value={motionGain}
+                        onChange={(event) => {
+                            const value = Number(event.currentTarget.value);
+                            motionTuningRef.current.gain = value;
+                            setMotionGain(value);
+                        }}
+                    />
+                </label>
+                <label className="ld30-motion-control">
+                    <span>
+                        Smoothing{" "}
+                        <output>{Math.round(motionSmoothing * 100)}%</output>
+                    </span>
+                    <input
+                        type="range"
+                        min="0"
+                        max="90"
+                        step="5"
+                        value={motionSmoothing * 100}
+                        onChange={(event) => {
+                            const value =
+                                Number(event.currentTarget.value) / 100;
+                            motionTuningRef.current.smoothing = value;
+                            setMotionSmoothing(value);
+                        }}
+                    />
+                </label>
+                <button
+                    className="ld30-motion-reset"
+                    type="button"
+                    onClick={() => {
+                        motionTuningRef.current.deadZone =
+                            ACCELERATION_DEAD_ZONE_METERS_PER_SECOND_SQUARED;
+                        motionTuningRef.current.gain = GAME_UNITS_PER_METER;
+                        motionTuningRef.current.smoothing = 0;
+                        setMotionDeadZone(
+                            ACCELERATION_DEAD_ZONE_METERS_PER_SECOND_SQUARED,
+                        );
+                        setMotionGain(GAME_UNITS_PER_METER);
+                        setMotionSmoothing(0);
+                    }}
+                >
+                    Reset motion tuning
+                </button>
+            </section>
             <pre
                 className="ld30-motion-debug"
                 aria-label="Motion sensor diagnostics"
