@@ -29,7 +29,7 @@ import {
     type Point,
     type TargetState,
 } from "./physics";
-import { getOrientationDirectionInput } from "./mobileControls";
+import { getAccelerationDirectionInput } from "./mobileControls";
 import {
     HOMLETMOO_RECORD_SECONDS,
     MIN_END_DELAY_MS,
@@ -359,7 +359,7 @@ export function Ld30Game() {
                     }
                     motionPermissionRequested = true;
 
-                    if (!("DeviceOrientationEvent" in window)) {
+                    if (!("DeviceMotionEvent" in window)) {
                         if (!cancelled) {
                             setControlHint(
                                 "Tilt unavailable • Touch to advance • Arrows / WASD",
@@ -368,17 +368,16 @@ export function Ld30Game() {
                         return;
                     }
 
-                    const orientationEvent =
-                        window.DeviceOrientationEvent as typeof DeviceOrientationEvent & {
+                    const motionEvent =
+                        window.DeviceMotionEvent as typeof DeviceMotionEvent & {
                             requestPermission?: () => Promise<PermissionState>;
                         };
                     try {
                         if (
-                            typeof orientationEvent.requestPermission ===
-                            "function"
+                            typeof motionEvent.requestPermission === "function"
                         ) {
                             const permission =
-                                await orientationEvent.requestPermission();
+                                await motionEvent.requestPermission();
                             if (permission !== "granted") {
                                 if (!cancelled) {
                                     setControlHint(
@@ -512,12 +511,13 @@ export function Ld30Game() {
                     "s",
                     "d",
                 ]);
-                let orientationInput: DirectionInput = {
+                let motionInput: DirectionInput = {
                     up: false,
                     down: false,
                     left: false,
                     right: false,
                 };
+                let motionBaseline: Point | null = null;
                 const handleGameplayKeyDown = (event: KeyboardEvent) => {
                     const key = event.key.toLowerCase();
                     if (
@@ -533,7 +533,7 @@ export function Ld30Game() {
                 };
                 const clearInputs = () => {
                     heldKeys.clear();
-                    orientationInput = {
+                    motionInput = {
                         up: false,
                         down: false,
                         left: false,
@@ -544,26 +544,47 @@ export function Ld30Game() {
                     up:
                         heldKeys.has("arrowup") ||
                         heldKeys.has("w") ||
-                        orientationInput.up,
+                        motionInput.up,
                     down:
                         heldKeys.has("arrowdown") ||
                         heldKeys.has("s") ||
-                        orientationInput.down,
+                        motionInput.down,
                     left:
                         heldKeys.has("arrowleft") ||
                         heldKeys.has("a") ||
-                        orientationInput.left,
+                        motionInput.left,
                     right:
                         heldKeys.has("arrowright") ||
                         heldKeys.has("d") ||
-                        orientationInput.right,
+                        motionInput.right,
                 });
-                const handleDeviceOrientation = (
-                    event: DeviceOrientationEvent,
-                ) => {
-                    orientationInput = getOrientationDirectionInput(
-                        event.beta,
-                        event.gamma,
+                const handleDeviceMotion = (event: DeviceMotionEvent) => {
+                    const acceleration = event.accelerationIncludingGravity;
+                    const x = acceleration?.x;
+                    const y = acceleration?.y;
+                    if (
+                        x == null ||
+                        y == null ||
+                        !Number.isFinite(x) ||
+                        !Number.isFinite(y)
+                    ) {
+                        motionInput = {
+                            up: false,
+                            down: false,
+                            left: false,
+                            right: false,
+                        };
+                        return;
+                    }
+                    if (!motionBaseline) {
+                        motionBaseline = { x, y };
+                        return;
+                    }
+                    motionInput = getAccelerationDirectionInput(
+                        x,
+                        y,
+                        motionBaseline.x,
+                        motionBaseline.y,
                     );
                 };
                 const requestMotionPermissionFromTouch = () => {
@@ -831,6 +852,7 @@ export function Ld30Game() {
                 levelScene.onActivate = () => {
                     gameClock.levelElapsedMs = 0;
                     clearInputs();
+                    motionBaseline = null;
                     void audioManager.unlock().then(() => {
                         audioManager.startRollingLoop();
                         audioManager.playBell();
@@ -840,10 +862,7 @@ export function Ld30Game() {
                     });
                     window.addEventListener("keyup", handleGameplayKeyUp);
                     window.addEventListener("blur", clearInputs);
-                    window.addEventListener(
-                        "deviceorientation",
-                        handleDeviceOrientation,
-                    );
+                    window.addEventListener("devicemotion", handleDeviceMotion);
                     canvas.addEventListener(
                         "pointerdown",
                         requestMotionPermissionFromPointer,
@@ -899,8 +918,8 @@ export function Ld30Game() {
                         );
                         window.removeEventListener("blur", clearInputs);
                         window.removeEventListener(
-                            "deviceorientation",
-                            handleDeviceOrientation,
+                            "devicemotion",
+                            handleDeviceMotion,
                         );
                         canvas.removeEventListener(
                             "pointerdown",

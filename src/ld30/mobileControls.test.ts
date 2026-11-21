@@ -2,18 +2,18 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-    getOrientationDirectionInput,
-    ORIENTATION_DEAD_ZONE_DEGREES,
+    ACCELERATION_DEAD_ZONE_METERS_PER_SECOND_SQUARED,
+    getAccelerationDirectionInput,
 } from "./mobileControls.ts";
 
-test("device orientation maps beta and gamma to directional input", () => {
-    assert.deepEqual(getOrientationDirectionInput(-20, 20), {
+test("device acceleration maps x and y gravity to directional input", () => {
+    assert.deepEqual(getAccelerationDirectionInput(-3, 3), {
         up: true,
         down: false,
         left: false,
         right: true,
     });
-    assert.deepEqual(getOrientationDirectionInput(20, -20), {
+    assert.deepEqual(getAccelerationDirectionInput(3, -3), {
         up: false,
         down: true,
         left: true,
@@ -21,15 +21,27 @@ test("device orientation maps beta and gamma to directional input", () => {
     });
 });
 
-test("device orientation ignores small and invalid readings", () => {
+test("device acceleration ignores small and invalid readings", () => {
     assert.deepEqual(
-        getOrientationDirectionInput(ORIENTATION_DEAD_ZONE_DEGREES, Number.NaN),
+        getAccelerationDirectionInput(
+            ACCELERATION_DEAD_ZONE_METERS_PER_SECOND_SQUARED,
+            Number.NaN,
+        ),
         { up: false, down: false, left: false, right: false },
     );
-    assert.deepEqual(getOrientationDirectionInput(null, null), {
+    assert.deepEqual(getAccelerationDirectionInput(null, null), {
         up: false,
         down: false,
         left: false,
         right: false,
+    });
+});
+
+test("device acceleration is measured relative to the neutral holding position", () => {
+    assert.deepEqual(getAccelerationDirectionInput(7, 11, 10, 8), {
+        up: true,
+        down: false,
+        left: false,
+        right: true,
     });
 });

@@ -1,26 +1,28 @@
 import type { DirectionInput } from "./physics.ts";
 
-export const ORIENTATION_DEAD_ZONE_DEGREES = 12;
+export const ACCELERATION_DEAD_ZONE_METERS_PER_SECOND_SQUARED = 2;
 
-export function getOrientationDirectionInput(
-    beta: number | null,
-    gamma: number | null,
+export function getAccelerationDirectionInput(
+    accelerationX: number | null,
+    accelerationY: number | null,
+    neutralX = 0,
+    neutralY = 0,
 ): DirectionInput {
-    const tiltBeta = beta ?? 0;
-    const tiltGamma = gamma ?? 0;
+    const x = accelerationX === null ? Number.NaN : accelerationX - neutralX;
+    const y = accelerationY === null ? Number.NaN : accelerationY - neutralY;
 
     return {
         up:
-            Number.isFinite(tiltBeta) &&
-            tiltBeta < -ORIENTATION_DEAD_ZONE_DEGREES,
+            Number.isFinite(y) &&
+            y > ACCELERATION_DEAD_ZONE_METERS_PER_SECOND_SQUARED,
         down:
-            Number.isFinite(tiltBeta) &&
-            tiltBeta > ORIENTATION_DEAD_ZONE_DEGREES,
+            Number.isFinite(y) &&
+            y < -ACCELERATION_DEAD_ZONE_METERS_PER_SECOND_SQUARED,
         left:
-            Number.isFinite(tiltGamma) &&
-            tiltGamma < -ORIENTATION_DEAD_ZONE_DEGREES,
+            Number.isFinite(x) &&
+            x > ACCELERATION_DEAD_ZONE_METERS_PER_SECOND_SQUARED,
         right:
-            Number.isFinite(tiltGamma) &&
-            tiltGamma > ORIENTATION_DEAD_ZONE_DEGREES,
+            Number.isFinite(x) &&
+            x < -ACCELERATION_DEAD_ZONE_METERS_PER_SECOND_SQUARED,
     };
 }
