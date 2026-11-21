@@ -75,6 +75,16 @@ test("directional acceleration and friction follow the source update order", () 
     assert.equal(noInputMotion.vy, 0);
 });
 
+test("sensor acceleration changes marble velocity proportionally", () => {
+    const motion = updateMarbleMotion(
+        { x: 0, y: 0, vx: 0, vy: 0 },
+        { ...noInput, accelerationX: 20 },
+        0.1,
+    );
+
+    assert.equal(motion.vx, 2);
+});
+
 test("axis-separated wall collision prevents tunneling and applies restitution", () => {
     const grid = openGrid();
     grid.cells[1]![2] = TILE_WALL;

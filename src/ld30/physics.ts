@@ -18,6 +18,8 @@ export interface DirectionInput {
     down: boolean;
     left: boolean;
     right: boolean;
+    accelerationX?: number;
+    accelerationY?: number;
 }
 
 export interface Point {
@@ -71,37 +73,35 @@ export function updateMarbleMotion(
     let vx = state.vx;
     let vy = state.vy;
 
-    if (input.up) {
-        vy -= MARBLE_G * MARBLE_SLOPE * dt;
-    }
-    if (input.down) {
-        vy += MARBLE_G * MARBLE_SLOPE * dt;
-    }
-    if (input.left) {
-        vx -= MARBLE_G * MARBLE_SLOPE * dt;
-    }
-    if (input.right) {
-        vx += MARBLE_G * MARBLE_SLOPE * dt;
-    }
+    const horizontalAcceleration =
+        (Number(input.right) - Number(input.left)) * MARBLE_G * MARBLE_SLOPE +
+        (input.accelerationX ?? 0);
+    const verticalAcceleration =
+        (Number(input.down) - Number(input.up)) * MARBLE_G * MARBLE_SLOPE +
+        (input.accelerationY ?? 0);
+    vx += horizontalAcceleration * dt;
+    vy += verticalAcceleration * dt;
 
     const friction = MARBLE_G * MARBLE_MU * dt;
-    if (!xor(input.up, input.down)) {
+    if (verticalAcceleration === 0) {
         vy = applyVelocityFriction(vy, friction);
     }
-    if (!xor(input.left, input.right)) {
+    if (horizontalAcceleration === 0) {
         vx = applyVelocityFriction(vx, friction);
     }
 
-    const dx = Number(input.right) - Number(input.left);
-    const dy = Number(input.down) - Number(input.up);
     const tiltAmount =
-        xor(input.left, input.right) || xor(input.up, input.down) ? 3 : 0;
+        horizontalAcceleration !== 0 || verticalAcceleration !== 0 ? 3 : 0;
 
     return {
         vx,
         vy,
         tiltDirection:
-            tiltAmount > 0 ? (Math.atan2(dx, dy) * 180) / Math.PI : 0,
+            tiltAmount > 0
+                ? (Math.atan2(horizontalAcceleration, verticalAcceleration) *
+                      180) /
+                  Math.PI
+                : 0,
         tiltAmount,
     };
 }

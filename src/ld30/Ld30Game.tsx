@@ -614,6 +614,8 @@ export function Ld30Game() {
                     down: false,
                     left: false,
                     right: false,
+                    accelerationX: 0,
+                    accelerationY: 0,
                 };
                 const handleGameplayKeyDown = (event: KeyboardEvent) => {
                     const key = event.key.toLowerCase();
@@ -635,6 +637,8 @@ export function Ld30Game() {
                         down: false,
                         left: false,
                         right: false,
+                        accelerationX: 0,
+                        accelerationY: 0,
                     };
                 };
                 const getDirectionInput = (): DirectionInput => ({
@@ -654,6 +658,8 @@ export function Ld30Game() {
                         heldKeys.has("arrowright") ||
                         heldKeys.has("d") ||
                         motionInput.right,
+                    accelerationX: motionInput.accelerationX,
+                    accelerationY: motionInput.accelerationY,
                 });
                 const handleDeviceMotion = (event: DeviceMotionEvent) => {
                     motionEventCount += 1;
@@ -673,6 +679,8 @@ export function Ld30Game() {
                             down: false,
                             left: false,
                             right: false,
+                            accelerationX: 0,
+                            accelerationY: 0,
                         };
                         lastMotionInputText =
                             "none (x/y unavailable or non-finite)";
@@ -697,7 +705,7 @@ export function Ld30Game() {
                         motionBaseline.x,
                         motionBaseline.y,
                     );
-                    lastMotionInputText = `up:${motionInput.up} down:${motionInput.down} left:${motionInput.left} right:${motionInput.right}`;
+                    lastMotionInputText = `acceleration x:${formatSensorValue(motionInput.accelerationX)} y:${formatSensorValue(motionInput.accelerationY)} game units/s²`;
                     if (lastMotionEventAt - lastMotionLogAt >= 250) {
                         lastMotionLogAt = lastMotionEventAt;
                         publishMotionDebug();
